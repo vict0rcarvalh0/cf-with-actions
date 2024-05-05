@@ -37,5 +37,5 @@ jobs:
           template: cf.yml
           no-fail-on-empty-changeset: "1"
           parameter-overrides: |
-            DBPassword=postgres
+            DBPassword=postgresdb
             EnvironmentType=dev

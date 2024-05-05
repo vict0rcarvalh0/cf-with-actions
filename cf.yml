@@ -1,9 +1,6 @@
-AWSTemplateFormatVersion: 2010-09-09
 Description: Building a complete Web Application stack using CloudFormation
 
 Parameters:
-  AvailabilityZone:
-    Type: AWS::EC2::AvailabilityZone::Name
   EnvironmentType:
     Description: "Specify the Environment type of the stack."
     Type: String
@@ -20,6 +17,11 @@ Parameters:
     Type: String
     Description: The name of an existing Amazon EC2 key pair in this region to use to SSH into the Amazon EC2 instances.
     Default: KP-GEN
+  DBUsername:
+    Type: String 
+  DBPassword:
+    Type: String 
+
 
 Mappings:
   EnvironmentToInstanceType:
@@ -31,10 +33,9 @@ Mappings:
       InstanceType: t2.micro
 
 Resources:
-  EC2Instance:
+  EC2Instance1:
     Type: AWS::EC2::Instance
     Properties:
-      AvailabilityZone: !Ref AvailabilityZone
       ImageId: !Ref AmiID
       InstanceType:
         !FindInMap [
@@ -42,20 +43,50 @@ Resources:
           !Ref EnvironmentType,
           InstanceType,
         ]
+      SubnetId: !Ref PublicSubnet1
       KeyName: !Ref KeyPairName
       SecurityGroupIds:
-        - !Ref WebAppSecurityGroup
+        - !Ref EC2SecurityGroup
 
-  SecurityGroup:
+  EC2Instance2:
+    Type: AWS::EC2::Instance
+    Properties:
+      AvailabilityZone: us-east-1b
+      ImageId: !Ref AmiID
+      InstanceType:
+        !FindInMap [
+          EnvironmentToInstanceType,
+          !Ref EnvironmentType,
+          InstanceType,
+        ]
+      SubnetId: !Ref PublicSubnet2
+      KeyName: !Ref KeyPairName
+      SecurityGroupIds:
+        - !Ref EC2SecurityGroup
+  
+  ELBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "ELB Security Group"
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+
+  EC2SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupName: !Join ["-", [security-group, !Ref EnvironmentType]]
-      GroupDescription: "Allow HTTP/HTTPS and SSH inbound and outbound traffic"
+      GroupDescription: "EC2 Security Group"
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-          CidrIp: 0.0.0.0/0
+          SourceSecurityGroupId: 
+            Fn::GetAtt:
+            - ELBSecurityGroup
+            - GroupId
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
@@ -65,16 +96,36 @@ Resources:
           ToPort: 22
           CidrIp: 0.0.0.0/0
 
-  EIP:
-    Type: AWS::EC2::EIP
+  ElasticLoadBalancer:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
     Properties:
-      Domain: vpc
-      InstanceId: !Ref WebAppInstance
-      Tags:
-        - Key: Name
-          Value: !Join ["-", [eip, !Ref EnvironmentType]]
+      AvailabilityZones: [us-east-1a, us-east-1b]
+      Instances:
+      - !Ref EC2Instance1
+      - !Ref EC2Instance2
+      Listeners:
+      - LoadBalancerPort: '80'
+        InstancePort: '80'
+        Protocol: HTTP
+      HealthCheck:
+        Target: HTTP:80/
+        HealthyThreshold: '3'
+        UnhealthyThreshold: '5'
+        Interval: '30'
+        Timeout: '5'
+      SecurityGroups:
+        - !GetAtt ELBSecurityGroup.GroupId
 
-Outputs:
-  WebsiteURL:
-    Value: !Sub http://${WebAppEIP}
-    Description: WebApp URL
+#   EIP:
+#     Type: AWS::EC2::EIP
+#     Properties:
+#       Domain: vpc
+#       InstanceId: !Ref EC2Instance
+#       Tags:
+#         - Key: Name
+#           Value: !Join ["-", [eip, !Ref EnvironmentType]]
+
+# Outputs:
+#   WebsiteURL:
+#     Value: !Sub http://${WebAppEIP}
+#     Description: WebApp URL

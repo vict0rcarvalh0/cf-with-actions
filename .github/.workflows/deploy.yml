@@ -1,57 +1,38 @@
-name: Deploy AWS Infrastructure Domain
+name: 'Deploy to AWS CloudFormation'
 
-on:
+on: 
   push:
-    branches:
-      - main
-      - develop
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
-env: 
-  AWS_REGION: ${{ secrets.AWS_REGION }}
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  ENVIRONMENT: ${{ github.ref_name }}
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Install AWS CLI
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-pip
-          pip3 install awscli --upgrade --user
-
-      - name: Deploy AWS Infrastructure
-        run: |
-          aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-          aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-          aws configure set region $AWS_REGION
-          aws cloudformation deploy --template-file infrastructure.yml --stack-name my-stack-${ENVIRONMENT} --capabilities CAPABILITY_IAM
-  
+  # This workflow contains a single job called "deploy"
   deploy:
+    # The type of runner that the job will run on
     runs-on: ubuntu-latest
-
-    needs:
-      [build]
-
+    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      - name: Checkout code
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - name: Checkout code from master branch
         uses: actions/checkout@v2
 
-      - name: Install AWS CLI
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-pip
-          pip3 install awscli --upgrade --user
+      # Configure AWS Credential
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.ACCESS_KEY_SECRET }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: us-east-1
 
-      - name: Deploy AWS Infrastructure
-        run: |
-          aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-          aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-          aws configure set region $AWS_REGION
-          aws cloudformation deploy --template-file infrastructure.yml --stack-name my-stack-${ENVIRONMENT} --capabilities CAPABILITY_IAM
+      # Deploy to AWS CloudFormation
+      - name: Deploy to AWS CloudFormation
+        uses: aws-actions/aws-cloudformation-github-deploy@v1
+        with:
+          name: cf
+          template: cf.yml
+          no-fail-on-empty-changeset: "1"

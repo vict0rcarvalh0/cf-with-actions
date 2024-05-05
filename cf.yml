@@ -33,7 +33,6 @@ Parameters:
     MaxLength: "41"
     ConstraintDescription: Must have minimum length of 8 and maximum length of 41
 
-
 Mappings:
   EnvironmentToInstanceType:
     dev:

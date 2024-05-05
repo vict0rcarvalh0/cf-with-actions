@@ -33,9 +33,9 @@ jobs:
       - name: Deploy to AWS CloudFormation
         uses: aws-actions/aws-cloudformation-github-deploy@v1
         with:
-          name: cf
+          name: application-stack
           template: cf.yml
           no-fail-on-empty-changeset: "1"
-          parameter-overrides: |
-            DBPassword=postgresdb
-            EnvironmentType=dev
+          parameter-overrides:
+            "DBPassword=postgresdb"
+            "EnvironmentType=dev"

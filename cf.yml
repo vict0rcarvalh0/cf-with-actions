@@ -177,12 +177,14 @@ Resources:
       UserData:
         Fn::Base64: |
           #!/bin/bash
-          sudo apt-get update -y
-          sudo apt-get install -y golang
+          sudo yum update -y
+          sudo yum install -y golang
           export GOPATH=$HOME/go
-          sudo apt install git -y
+          sudo yum git -y
           git clone https://github.com/vict0rcarvalh0/cf-with-actions.git
           cd cf-with-actions/sample-app
+          go mod init sample-app
+          go mod tidy
           go build
           ./sample-app
       Tags:
@@ -207,12 +209,14 @@ Resources:
       UserData:
         Fn::Base64: |
           #!/bin/bash
-          sudo apt-get update -y
-          sudo apt-get install -y golang
+          sudo yum update -y
+          sudo yum install -y golang
           export GOPATH=$HOME/go
-          sudo apt install git -y
+          sudo yum git -y
           git clone https://github.com/vict0rcarvalh0/cf-with-actions.git
           cd cf-with-actions/sample-app
+          go mod init sample-app
+          go mod tidy
           go build
           ./sample-app
       Tags:

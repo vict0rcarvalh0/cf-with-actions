@@ -235,6 +235,10 @@ Resources:
         FromPort: 80
         ToPort: 80
         CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: 8080
+        ToPort: 8080
+        CidrIp: 0.0.0.0/0
 
   EC2SecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -280,6 +284,10 @@ Resources:
         Port: 80
       - Id: !Ref EC2Instance2
         Port: 80
+      - Id: !Ref EC2Instance1
+        Port: 8080
+      - Id: !Ref EC2Instance2
+        Port: 8080
       UnhealthyThresholdCount: 3
       VpcId: !Ref VPC
 

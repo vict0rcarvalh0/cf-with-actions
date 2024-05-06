@@ -174,19 +174,31 @@ Resources:
       KeyName: !Ref KeyPairName
       SecurityGroupIds:
         - !Ref EC2SecurityGroup
-      UserData:
-        Fn::Base64: |
-          #!/bin/bash
-          sudo yum update -y
-          sudo yum install -y golang
-          export GOPATH=$HOME/go
-          sudo yum git -y
-          git clone https://github.com/vict0rcarvalh0/cf-with-actions.git
-          cd cf-with-actions/sample-app
-          go mod init sample-app
-          go mod tidy
-          go build
-          ./sample-app
+      UserData: !Base64
+          'Fn::Join': 
+            - ''
+            - - |
+            #!/bin/bash -xe
+            - |
+            sudo yum update -y
+            - |
+            sudo yum install -y golang
+            - |
+            export GOPATH=$HOME/go
+            - |
+            sudo yum git -y
+            - |
+            git clone https://github.com/vict0rcarvalh0/cf-with-actions.git
+            - |
+            cd cf-with-actions/sample-app
+            - |
+            go mod init sample-app
+            - |
+            go mod tidy
+            - |
+            go build
+            - |
+            ./sample-app
       Tags:
         - Key: Name
           Value: !Join ["-", [ec2-1, !Ref EnvironmentType]]
@@ -206,18 +218,30 @@ Resources:
       KeyName: !Ref KeyPairName
       SecurityGroupIds:
         - !Ref EC2SecurityGroup
-      UserData:
-        Fn::Base64: |
-          #!/bin/bash
+      UserData: !Base64
+        'Fn::Join': 
+          - ''
+          - - |
+          #!/bin/bash -xe
+          - |
           sudo yum update -y
+          - |
           sudo yum install -y golang
+          - |
           export GOPATH=$HOME/go
+          - |
           sudo yum git -y
+          - |
           git clone https://github.com/vict0rcarvalh0/cf-with-actions.git
+          - |
           cd cf-with-actions/sample-app
+          - |
           go mod init sample-app
+          - |
           go mod tidy
+          - |
           go build
+          - |
           ./sample-app
       Tags:
         - Key: Name

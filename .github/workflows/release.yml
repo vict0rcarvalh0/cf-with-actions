@@ -1,0 +1,60 @@
+name: Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      action-type:
+        type: choice
+        description: "Escolha o tipo de imagem"
+        options: 
+          - release
+          - rollback
+        required: true
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repo
+      uses: actions/checkout@v2
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+        aws-region: us-east-1
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Determine IMAGE_TAG
+      id: set-tag
+      run: |
+        if [ "${{ github.event.inputs.action-type }}" == "release" ]; then
+          echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+        elif [ "${{ github.event.inputs.action-type }}" == "rollback" ]; then
+          echo "IMAGE_TAG=rollback" >> $GITHUB_ENV
+        else
+          echo "IMAGE_TAG=unknown" >> $GITHUB_ENV
+        fi
+
+    - name: Delete Existing Image
+      run: |
+        aws ecr batch-delete-image --repository-name builds --image-ids imageTag=$IMAGE_TAG || echo "No image found with tag $IMAGE_TAG, or deletion not required."
+
+    - name: Verifies
+      run: |
+        echo "ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}"
+        echo "IMAGE_TAG=$IMAGE_TAG"
+
+    - name: Build the Docker image
+      run: |
+        docker build -t ${{ steps.login-ecr.outputs.registry }}/builds:$IMAGE_TAG -f src/server/Dockerfile src/server
+
+    - name: Push the Docker image to Amazon ECR
+      run: |
+        docker push ${{ steps.login-ecr.outputs.registry }}/builds:$IMAGE_TAG

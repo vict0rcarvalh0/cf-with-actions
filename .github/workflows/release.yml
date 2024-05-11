@@ -3,6 +3,8 @@ name: Pipeline
 on:
   pull_request_review:
     types: [submitted]
+  pull_request:
+    types: [closed]
   workflow_dispatch:
     inputs:
       action-type:
@@ -15,8 +17,9 @@ on:
 
 jobs:
   deploy:
-    if: github.event.review.state == 'approved'
-    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'pull_request_review' && github.event.review.state == 'approved') || 
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true) ||     runs-on: ubuntu-latest
 
     steps:
     - name: Verify if the pull request is sent by the development branch

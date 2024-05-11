@@ -26,7 +26,7 @@ jobs:
     - name: Verify if the pull request is sent by the development branch
       if: github.event_name == 'pull_request'
       run: |
-        if [[ ${{ github.event.pull_request.base.ref }} == "development" ]]; then
+        if [[ ${{ github.event.pull_request.head.ref }} == "development" ]]; then
           echo "Este PR vem da branch develop."
         else
           echo "Este PR não vem da branch develop."

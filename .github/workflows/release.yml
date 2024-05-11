@@ -106,13 +106,13 @@ jobs:
       run: |
         docker push ${{ steps.login-ecr.outputs.registry }}/builds:$IMAGE_TAG
     
-    - name: Set up SSH Connection
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H ${{ env.INSTANCE_IP }} > ~/.ssh/known_hosts
+    # - name: Set up SSH Connection
+    #   run: |
+    #     mkdir -p ~/.ssh
+    #     echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+    #     chmod 600 ~/.ssh/id_rsa
+    #     ssh-keyscan -H ${{ env.INSTANCE_IP }} > ~/.ssh/known_hosts
 
-    - name: Access EC2 instance
-      run: |
-        ssh -i ~/.ssh/id_rsa ec2-user@${{ env.INSTANCE_IP }} 
+    # - name: Access EC2 instance
+    #   run: |
+    #     ssh -i ~/.ssh/id_rsa ec2-user@${{ env.INSTANCE_IP }} 

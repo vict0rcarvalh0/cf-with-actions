@@ -1,0 +1,364 @@
+Description: Building a complete Web Application stack using CloudFormation
+
+Parameters:
+  EnvironmentType:
+    Description: "Specify the Environment type of the stack."
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - uat
+      - prod
+  AmiID:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Description: "The ID of the AMI."
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+  KeyPairName:
+    Type: String
+    Description: The name of an existing Amazon EC2 key pair in this region to use to SSH into the Amazon EC2 instances.
+    Default: KP-GEN
+  DBInstanceIdentifier:
+    Type: String
+    Default: "postgres-db"
+  DBUsername:
+    Type: String
+    MinLength: "1"
+    MaxLength: "16"
+    AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
+    ConstraintDescription: Must begin with a letter and contain only alphanumeric characters.
+    Default: "postgres"
+  DBPassword:
+    Type: String
+    MinLength: "8"
+    MaxLength: "41"
+    ConstraintDescription: Must have minimum length of 8 and maximum length of 41
+
+Mappings:
+  EnvironmentToInstanceType:
+    dev:
+      InstanceType: t2.micro
+    uat:
+      InstanceType: t2.micro
+    prod:
+      InstanceType: t2.micro
+
+Resources:
+  # VPC Deployment
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+      - Key: Name
+        Value: !Join ["-", [vpc, !Ref EnvironmentType]]
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+      - Key: Name
+        Value: !Join ["-", [internet-gateway, !Ref EnvironmentType]]
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: us-east-1a
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [public-subnet-1, !Ref EnvironmentType]]
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.3.0/24
+      AvailabilityZone: us-east-1b
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [public-subnet-2, !Ref EnvironmentType]]
+
+  # Route Table Configuration 
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [public-route-table, !Ref EnvironmentType]]
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetRouteTableAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnetRouteTableAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
+  
+  # EC2 Deployment
+  EC2Instance1:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref AmiID
+      InstanceType:
+        !FindInMap [
+          EnvironmentToInstanceType,
+          !Ref EnvironmentType,
+          InstanceType,
+        ]
+      SubnetId: !Ref PublicSubnet1
+      KeyName: !Ref KeyPairName
+      SecurityGroupIds:
+        - !Ref EC2SecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          # Definir o caminho para o arquivo de log
+          LOG_FILE="/var/log/userdata_execution.log"
+
+          # Atualizar o sistema e redirecionar os logs para o arquivo
+          yum update -y &>> $LOG_FILE
+
+          amazon-linux-extras install docker -y &>> $LOG_FILE
+
+          # Iniciar o Docker e redirecionar os logs para o arquivo
+          systemctl start docker &>> $LOG_FILE
+
+          touch home/ec2-user/script.sh &>> $LOG_FILE
+
+          echo "#\!/bin/bash" > home/ec2-user/script.sh
+          echo "release_type=\$1" >> home/ec2-user/script.sh
+          echo "AWS_DEFAULT_REGION="us-east-1"" >> home/ec2-user/script.sh
+          echo "export AWS_ACCESS_KEY_ID=\$(aws ssm get-parameter --name '/my-app/aws-access-key-id' --with-decryption --query 'Parameter.Value' --output text)" >> home/ec2-user/script.sh
+          echo "export AWS_SECRET_ACCESS_KEY=\$(aws ssm get-parameter --name '/my-app/aws-secret-access-key' --with-decryption --query 'Parameter.Value' --output text)" >> home/ec2-user/script.sh
+          echo "export AWS_SESSION_TOKEN=\$(aws ssm get-parameter --name '/my-app/aws-session-token' --with-decryption --query 'Parameter.Value' --output text)" >> home/ec2-user/script.sh
+          echo "export AWS_DEFAULT_REGION=\$(aws ssm get-parameter --name '/my-app/aws-region' --query 'Parameter.Value' --output text)" >> home/ec2-user/script.sh
+          echo "" >> home/ec2-user/script.sh
+          echo "AWS_ECR_PASSWORD=\$(aws ecr get-login-password --region $AWS_DEFAULT_REGION)" >> home/ec2-user/script.sh
+          echo "" >> home/ec2-user/script.sh
+          echo "if [[ $(docker ps -q) ]]; then" >> home/ec2-user/script.sh
+          echo "  sudo docker stop $(docker ps -q)" >> home/ec2-user/script.sh
+          echo "fi" >> home/ec2-user/script.sh
+          echo "" >> home/ec2-user/script.sh
+          echo "sudo docker system prune -f" >> home/ec2-user/script.sh
+          echo "" >> home/ec2-user/script.sh
+          echo "# Login no Docker com credenciais do ECR" >> home/ec2-user/script.sh
+          echo "echo \$AWS_ECR_PASSWORD | sudo docker login --username AWS --password-stdin 713621535342.dkr.ecr.us-east-1.amazonaws.com" >> home/ec2-user/script.sh
+          echo "sudo docker pull 713621535342.dkr.ecr.us-east-1.amazonaws.com/builds:\$release_type" >> home/ec2-user/script.sh
+          echo "" >> home/ec2-user/script.sh
+          echo "sudo docker run -d --env-file .env -p 8080:8080 713621535342.dkr.ecr.us-east-1.amazonaws.com/builds:\$release_type" >> home/ec2-user/script.sh
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [ec2-1, !Ref EnvironmentType]]
+
+  EC2Instance2:
+    Type: AWS::EC2::Instance
+    Properties:
+      AvailabilityZone: us-east-1b
+      ImageId: !Ref AmiID
+      InstanceType:
+        !FindInMap [
+          EnvironmentToInstanceType,
+          !Ref EnvironmentType,
+          InstanceType,
+        ]
+      SubnetId: !Ref PublicSubnet2
+      KeyName: !Ref KeyPairName
+      SecurityGroupIds:
+        - !Ref EC2SecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          # Definir o caminho para o arquivo de log
+          LOG_FILE="/var/log/userdata_execution.log"
+
+          # Atualizar o sistema e redirecionar os logs para o arquivo
+          yum update -y &>> $LOG_FILE
+
+          amazon-linux-extras install docker -y &>> $LOG_FILE
+
+          # Iniciar o Docker e redirecionar os logs para o arquivo
+          systemctl start docker &>> $LOG_FILE
+
+          touch home/ec2-user/script.sh &>> $LOG_FILE
+
+          echo "#\!/bin/bash" > home/ec2-user/script.sh
+          echo "release_type=\$1" >> home/ec2-user/script.sh
+          echo "export AWS_ACCESS_KEY_ID=\"\"" >> home/ec2-user/script.sh
+          echo "export AWS_SECRET_ACCESS_KEY=\"\"" >> home/ec2-user/script.sh
+          echo "export AWS_SESSION_TOKEN=\"\"" >> home/ec2-user/script.sh
+          echo "export AWS_DEFAULT_REGION=\"us-east-1\"" >> home/ec2-user/script.sh
+          echo "" >> home/ec2-user/script.sh
+          echo "AWS_ECR_PASSWORD=\$(aws ecr get-login-password)" >> home/ec2-user/script.sh
+          echo "" >> home/ec2-user/script.sh
+          echo "sudo docker stop \$(docker ps -aq)" >> home/ec2-user/script.sh
+          echo "" >> home/ec2-user/script.sh
+          echo "sudo docker system prune -f" >> home/ec2-user/script.sh
+          echo "" >> home/ec2-user/script.sh
+          echo "# Login no Docker com credenciais do ECR" >> home/ec2-user/script.sh
+          echo "echo \$AWS_ECR_PASSWORD | sudo docker login --username AWS --password-stdin 713621535342.dkr.ecr.us-east-1.amazonaws.com" >> home/ec2-user/script.sh
+          echo "sudo docker pull 713621535342.dkr.ecr.us-east-1.amazonaws.com/builds:\$release_type" >> home/ec2-user/script.sh
+          echo "" >> home/ec2-user/script.sh
+          echo "sudo docker run -d --env-file .env -p 8080:8080 713621535342.dkr.ecr.us-east-1.amazonaws.com/builds:\$release_type" >> home/ec2-user/script.sh
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [ec2-2, !Ref EnvironmentType]]
+  
+  # Security Group Deployment
+  ELBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Join ["-", [elb-security-group, !Ref EnvironmentType]]
+      GroupDescription: "ELB Security Group"
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: 8080
+        ToPort: 8080
+        CidrIp: 0.0.0.0/0
+
+  EC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Join ["-", [ec2-security-group, !Ref EnvironmentType]]
+      GroupDescription: "EC2 Security Group"
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: 
+            Fn::GetAtt:
+            - ELBSecurityGroup
+            - GroupId
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: 0.0.0.0/0
+
+  # Target Group Configuration
+  EC2TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 15
+      HealthyThresholdCount: 5
+      Matcher:
+        HttpCode: '200'
+      Name: EC2TargetGroup
+      Port: 80
+      Protocol: HTTP
+      TargetGroupAttributes:
+      - Key: deregistration_delay.timeout_seconds
+        Value: '20'
+      Targets:
+      - Id: !Ref EC2Instance1
+        Port: 80
+      - Id: !Ref EC2Instance2
+        Port: 80
+      - Id: !Ref EC2Instance1
+        Port: 8080
+      - Id: !Ref EC2Instance2
+        Port: 8080
+      UnhealthyThresholdCount: 3
+      VpcId: !Ref VPC
+
+  # Load Balancer Deployment
+  ElasticLoadBalancer:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Properties:
+      Scheme: internet-facing
+      Subnets:
+      - !Ref PublicSubnet1
+      - !Ref PublicSubnet2
+      Listeners:
+      - LoadBalancerPort: '80'
+        InstancePort: '80'
+        Protocol: HTTP
+      SecurityGroups:
+        - !GetAtt ELBSecurityGroup.GroupId
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [elb, !Ref EnvironmentType]]
+  
+  # RDS Deployment
+  RDSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Join ["-", [db-security-group, !Ref EnvironmentType]]
+      GroupDescription: "RDS traffic"
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId: 
+            Fn::GetAtt:
+            - ELBSecurityGroup
+            - GroupId
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [db-security-group, !Ref EnvironmentType]]
+  
+  RDSSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupName: subnetgroup
+      DBSubnetGroupDescription: Subnet Group
+      SubnetIds:
+      - !Ref PublicSubnet1
+      - !Ref PublicSubnet2
+
+  RDSInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBSubnetGroupName: !Ref RDSSubnetGroup
+      VPCSecurityGroups:
+        - !GetAtt RDSSecurityGroup.GroupId
+      DBInstanceIdentifier: !Ref DBInstanceIdentifier
+      AllocatedStorage: "5"
+      DBInstanceClass: db.t3.micro
+      Engine: postgres
+      MasterUsername: !Ref DBUsername
+      MasterUserPassword: !Ref DBPassword
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [rds, !Ref EnvironmentType]]
+    DeletionPolicy: Snapshot
+    UpdateReplacePolicy: Snapshot
+    
+Outputs:
+  InstanceId:
+    Description: "Instance ID of the EC2 instance 1"
+    Value: !Ref EC2Instance1

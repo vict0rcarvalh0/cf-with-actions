@@ -1,6 +1,8 @@
 name: Pipeline
 
 on:
+  pull_request_review:
+    types: [submitted]
   workflow_dispatch:
     inputs:
       action-type:
@@ -16,8 +18,38 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Verify if the pull request is in approved state
+      if: github.event_name == 'pull_request' && github.event.review.state == 'approved'
+      run: |
+        if [[ ${{ github.event.review.state }} == 'approved' ]]; then
+          echo "O pull request foi aprovado, executando os passos do job."
+        fi
+    
+    - name: Verify if the pull request is sent by the development branch
+      if: github.event_name == 'pull_request'
+      run: |
+        if [[ ${{ github.event.pull_request.base.ref }} == "development" ]]; then
+          echo "Este PR vem da branch develop."
+        else
+          echo "Este PR não vem da branch develop."
+          exit 1
+        fi
+
     - name: Checkout Repo
       uses: actions/checkout@v2
+
+    - name: Setup Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: '1.22.2'
+
+    # - name: Install dependencies and run tests
+    #   run: |
+    #     cd src/server
+    #     cp .env.example .env
+    #     make database-dev
+    #     make test
+    #     make clean
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
@@ -25,7 +57,22 @@ jobs:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-        aws-region: us-east-1
+        aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+    
+    # - name: Deploy to AWS CloudFormation
+    #   uses: aws-actions/aws-cloudformation-github-deploy@v1
+    #   with:
+    #     name: deploy-buddies-stack
+    #     template: infra/deploy-buddies-cf.yml
+    #     no-fail-on-empty-changeset: "1"
+    #     parameter-overrides: "DBPassword=postgresdb,EnvironmentType=dev"
+    #   id: cloudformation-deploy
+
+    # - name: Get EC2 instance IP
+    #   run: |
+    #     instance_id="${{ steps.cloudformation-deploy.outputs.InstanceId }}"
+    #     instance_ip=$(aws ec2 describe-instances --instance-ids "$instance_id" --query "Reservations[0].Instances[0].PublicIpAddress" --output text)
+    #     echo "INSTANCE_IP=$instance_ip" >> $GITHUB_ENV
 
     - name: Login to Amazon ECR
       id: login-ecr
@@ -58,3 +105,14 @@ jobs:
     - name: Push the Docker image to Amazon ECR
       run: |
         docker push ${{ steps.login-ecr.outputs.registry }}/builds:$IMAGE_TAG
+    
+    - name: Set up SSH Connection
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ env.INSTANCE_IP }} > ~/.ssh/known_hosts
+
+    - name: Access EC2 instance
+      run: |
+        ssh -i ~/.ssh/id_rsa ec2-user@${{ env.INSTANCE_IP }} 

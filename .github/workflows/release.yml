@@ -14,17 +14,11 @@ on:
         required: true
 
 jobs:
-  build-and-push:
+  build:
+    if: github.event.review.state == 'approved'
     runs-on: ubuntu-latest
 
     steps:
-    - name: Verify if the pull request is in approved state
-      if: github.event_name == 'pull_request' && github.event.review.state == 'approved'
-      run: |
-        if [[ ${{ github.event.review.state }} == 'approved' ]]; then
-          echo "O pull request foi aprovado, executando os passos do job."
-        fi
-    
     - name: Verify if the pull request is sent by the development branch
       if: github.event_name == 'pull_request'
       run: |

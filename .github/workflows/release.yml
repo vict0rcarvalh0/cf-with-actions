@@ -14,7 +14,7 @@ on:
         required: true
 
 jobs:
-  build:
+  deploy:
     if: github.event.review.state == 'approved'
     runs-on: ubuntu-latest
 

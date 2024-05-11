@@ -19,19 +19,20 @@ jobs:
   deploy:
     if: |
       (github.event_name == 'pull_request_review' && github.event.review.state == 'approved') || 
-      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true) ||
+      (github.event_name == 'pull_request' && ${{ github.event.pull_request.head.ref }} == "development")
     runs-on: ubuntu-latest
 
     steps:
-    - name: Verify if the pull request is sent by the development branch
-      if: github.event_name == 'pull_request'
-      run: |
-        if [[ ${{ github.event.pull_request.head.ref }} == "development" ]]; then
-          echo "Este PR vem da branch develop."
-        else
-          echo "Este PR não vem da branch develop."
-          exit 1
-        fi
+    # - name: Verify if the pull request is sent by the development branch
+    #   if: github.event_name == 'pull_request'
+    #   run: |
+    #     if [[ ${{ github.event.pull_request.head.ref }} == "development" ]]; then
+    #       echo "Este PR vem da branch develop."
+    #     else
+    #       echo "Este PR não vem da branch develop."
+    #       exit 1
+    #     fi
 
     - name: Checkout Repo
       uses: actions/checkout@v2

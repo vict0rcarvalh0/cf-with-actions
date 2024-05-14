@@ -9,14 +9,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Navigate to the app directory
-        run: cd frontend
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
       - name: Instalar dependências
-        run: npm install
+        run: |
+          cd frontend
+          npm install
       - name: Construir a aplicação React
         run: npm run build
 

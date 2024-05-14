@@ -15,6 +15,7 @@ jobs:
           node-version: '20'
       - name: Instalar dependências
         run: |
+          ls
           cd frontend
           npm install
       - name: Construir a aplicação React

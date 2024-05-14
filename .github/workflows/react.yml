@@ -4,17 +4,72 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
 
+  build-app:
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Use Node.js
-      uses: actions/setup-node@v2
-      with:
-        node-version: '20'
-    - name: Construir e rodar Docker
-      run: |
-        cd frontend
-        docker build -t frontend .
-        docker run -d -p 80:80 frontend
+      - uses: actions/checkout@v4
+      - name: Navigate to the app directory
+        run: cd frontend
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Instalar dependências
+        run: npm install
+      - name: Construir a aplicação React
+        run: npm run build
+
+  static-code-analysis:
+    needs: build-app
+    runs-on: ubuntu-latest
+    services:
+      sonarqube:
+        image: sonarqube
+        ports:
+          - 9000:9000
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Wait for SonarQube to be fully ready
+        run: |
+          echo "Waiting for SonarQube to fully start..."
+          until [[ "$(curl -s 'http://localhost:9000/api/system/status' | jq -r .status)" == "UP" ]]; do
+            echo "SonarQube is not ready yet..."
+            sleep 10
+          done
+          echo "SonarQube is ready."
+      - name: Configure SonarQube Project and User
+        run: |
+          curl -u admin:admin -X POST "http://localhost:9000/api/projects/create" -d "name=frontend" -d "project=frontend"
+          curl -u admin:admin -X POST "http://localhost:9000/api/users/create" -d "login=sonaruser" -d "password=sonarpass" -d "name=Sonar User"
+          TOKEN=$(curl -u admin:admin -X POST "http://localhost:9000/api/user_tokens/generate" -d "login=sonaruser" -d "name=token-for-github-actions" | jq -r '.token')
+          echo "SONAR_TOKEN=$TOKEN" >> $GITHUB_ENV
+      - name: SonarQube Scan
+        uses: sonarsource/sonarqube-scan-action@master
+        env:
+          SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
+          SONAR_HOST_URL: http://sonarqube:9000
+      - name: Print and download analysis report
+        run: |
+          curl -s -u $SONAR_TOKEN: "http://localhost:9000/api/issues/search?componentKeys=frontend" | tee sonarqube-analysis-report.json | jq
+      - name: Upload analysis report
+        uses: actions/upload-artifact@v4
+        with:
+          name: sonarqube-analysis-report
+          path: sonarqube-analysis-report.json
+
+  docker-deployment:
+    needs: static-code-analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Navigate to the app directory
+        run: cd frontend
+      - name: Construir Docker Image
+        run: docker build -t frontend .
+      - name: Rodar Docker Container
+        run: docker run -d -p 80:80 frontend
+      - name: Checar se o container está rodando
+        run: docker ps | grep frontend

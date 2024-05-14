@@ -13,11 +13,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Navigate into the app directory
+        run: cd frontend
       - name: Instalar dependências
-        run: |
-          ls
-          cd frontend
-          npm install
+        run: npm install
       - name: Construir a aplicação React
         run: npm run build
 

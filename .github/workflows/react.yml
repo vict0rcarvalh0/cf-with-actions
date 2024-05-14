@@ -15,5 +15,6 @@ jobs:
         node-version: '20'
     - name: Construir e rodar Docker
       run: |
+        cd frontend
         docker build -t frontend .
         docker run -d -p 80:80 frontend

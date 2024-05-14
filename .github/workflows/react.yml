@@ -13,12 +13,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Navigate into the app directory
-        run: cd frontend
-      - name: Instalar dependências
-        run: npm install
-      - name: Construir a aplicação React
-        run: npm run build
+      - name: Install dependencies
+        run: cd frontend && npm install
+      - name: Build the React application
+        run: cd frontend && npm run build
 
   static-code-analysis:
     needs: build-app
@@ -65,10 +63,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Navigate to the app directory
-        run: cd frontend
       - name: Construir Docker Image
-        run: docker build -t frontend .
+        run: cd frontend && docker build -t frontend .
       - name: Rodar Docker Container
         run: docker run -d -p 80:80 frontend
       - name: Checar se o container está rodando

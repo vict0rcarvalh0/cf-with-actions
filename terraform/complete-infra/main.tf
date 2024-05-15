@@ -238,7 +238,7 @@ resource "aws_launch_configuration" "app_launch_configuration" {
   name_prefix   = "app-launch-configuration-"
   image_id      = var.ami_ssm_parameter
   instance_type = "t2.micro"
-  key_name      = aws_key_pair.deployer_key_pair.key_name
+  key_name      = aws_key_pair.kp.key_name
 
   security_groups = [aws_security_group.ec2.id]
 

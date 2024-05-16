@@ -58,7 +58,7 @@ jobs:
           name: sonarqube-analysis-report
           path: sonarqube-analysis-report.json
 
-  unit-tests:
+  backend-unit-tests:
     needs: static-code-analysis
     runs-on: ubuntu-latest
     steps:

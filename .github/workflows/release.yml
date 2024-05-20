@@ -13,17 +13,41 @@ jobs:
     - name: Checkout Repo
       uses: actions/checkout@v2
 
-    - name: Generate release tag
-      id: generate_release_tag
-      uses: amitsingh-007/next-release-tag@v5.0.0
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        tag_prefix: 'v'
-        tag_template: 'yyyy.mm.dd.i'
+    - name: Install GitHub CLI
+      run: |
+        curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+        sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+        sudo apt update
+        sudo apt install gh -y
 
-    - name: Create Release
-      uses: ncipollo/release-action@v1
+    - name: Authenticate GitHub CLI
+      run: |
+        echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+
+    - name: Set Release Tag and Name
+      id: set-release
+      run: |
+        DATE=$(date +'%Y-%m-%d')
+        VERSION=1
+        TAG="release-${DATE}-${VERSION}"
+        
+        # Check if the tag already exists and increment the version number if necessary
+        while gh release view $TAG > /dev/null 2>&1; do
+          VERSION=$((VERSION + 1))
+          TAG="release-${DATE}-${VERSION}"
+        done
+
+        echo "RELEASE_TAG=$TAG" >> $GITHUB_ENV
+        echo "RELEASE_NAME=Release $DATE-${VERSION}" >> $GITHUB_ENV
+
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag: ${{ steps.generate_release_tag.outputs.next_release_tag }}
-        generateReleaseNotes: true
-        makeLatest: true
+        tag_name: ${{ env.RELEASE_TAG }}
+        release_name: ${{ env.RELEASE_NAME }}
+        draft: false
+        prerelease: false
+        body: "New release for ${{ env.RELEASE_NAME }}"

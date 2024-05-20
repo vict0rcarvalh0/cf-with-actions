@@ -13,13 +13,25 @@ jobs:
     - name: Checkout Repo
       uses: actions/checkout@v2
 
+    - name: Setup GitHub CLI
+      uses: actions/setup-gh@v2
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Set Release Tag and Name
       id: set-release
       run: |
         DATE=$(date +'%Y-%m-%d')
         TAG="release-${DATE}-1"
+        
+        VERSION=1
+        while gh release view $TAG > /dev/null 2>&1; do
+          VERSION=$((VERSION + 1))
+          TAG="release-${DATE}-${VERSION}"
+        done
+
         echo "RELEASE_TAG=$TAG" >> $GITHUB_ENV
-        echo "RELEASE_NAME=Release $DATE" >> $GITHUB_ENV
+        echo "RELEASE_NAME=Release $DATE-$VERSION" >> $GITHUB_ENV
 
     - name: Create GitHub Release
       uses: actions/create-release@v1

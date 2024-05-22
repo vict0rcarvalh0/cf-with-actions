@@ -1,4 +1,4 @@
-name: Pipeline CD
+name: Pipeline CD - DeployBuddies
 
 on:
   workflow_dispatch:
@@ -26,15 +26,15 @@ jobs:
       uses: hashicorp/setup-terraform@v3
 
     - name: Terraform Init
-      run: terraform init
+      run: terraform -chdir=terraform/deploybuddies/prod init
 
     - name: Terraform Apply
       id: apply
-      run: terraform apply -auto-approve
+      run: terraform -chdir=terraform/deploybuddies/prod apply -auto-approve
 
     - name: Get Terraform Outputs
       id: outputs
-      run: terraform output -json > outputs.json
+      run: terraform -chdir=terraform/deploybuddies/prod output -json > outputs.json
 
     # - name: Display EC2 Instance IDs
     #   run: |

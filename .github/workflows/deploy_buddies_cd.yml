@@ -29,15 +29,15 @@ jobs:
       uses: hashicorp/setup-terraform@v3
 
     - name: Terraform Init
-      run: terraform -chdir=terraform/deploybuddies/prod init
+      run: terraform -chdir=terraform/deploy-buddies/prod init
 
     - name: Terraform Apply
       id: apply
-      run: terraform -chdir=terraform/deploybuddies/prod apply -auto-approve
+      run: terraform -chdir=terraform/deploy-buddies/prod apply -auto-approve
 
     - name: Get Terraform Outputs
       id: outputs
-      run: terraform -chdir=terraform/deploybuddies/prod output -json > outputs.json
+      run: terraform -chdir=terraform/deploy-buddies/prod output -json > outputs.json
 
     # - name: Display EC2 Instance IDs
     #   run: |

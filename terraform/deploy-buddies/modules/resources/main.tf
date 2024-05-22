@@ -104,6 +104,16 @@ resource "aws_instance" "backend_instance" {
   subnet_id                  = aws_subnet.public_subnet[count.index].id
   key_name                   = var.key_pair_name
   vpc_security_group_ids     = [aws_security_group.ec2.id]
+  user_data = base64encode(<<-EOF
+                #!/bin/bash
+
+                yum update -y
+                amazon-linux-extras install docker -y
+                systemctl start docker
+
+                touch home/ec2-user/script.sh &>> $LOG_FILE
+              EOF
+            )
 
   tags = {
     Name = "backend-1b-${var.env}"

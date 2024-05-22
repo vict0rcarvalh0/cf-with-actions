@@ -1,4 +1,4 @@
-name: ECR Pipeline
+name: Pipeline CI - DeployBuddies
 
 on:
   pull_request_review:

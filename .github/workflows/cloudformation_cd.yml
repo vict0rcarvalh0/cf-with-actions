@@ -38,6 +38,7 @@ jobs:
         echo "LATEST_TAG=${LATEST_TAG}" >> $GITHUB_ENV
   
   deploy-with-cloudformation:
+    needs: install-github-cli
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code from main branch

@@ -41,20 +41,29 @@ jobs:
       id: outputs
       run: terraform -chdir=terraform/deploy-buddies/prod output -json > outputs.json
 
-    # - name: Display EC2 Instance IDs
-    #   run: |
-    #     cat outputs.json
-    #     instance_ids=$(jq -r '.backend_instance_ids.value[]' outputs.json)
-    #     echo "Instance IDs: $instance_ids"
+    - name: Verify Private Key Creation
+      run: |
+        if [ ! -f "./terraform/deploy-buddies/prod/DEPLOYBUDDY-KP.pem" ]; then
+          echo "Private key not found!"
+          exit 1
+        else
+          echo "Private key created successfully."
+        fi
 
-    # - name: SSH into EC2 Instances
-    #   run: |
-    #     instance_ids=$(jq -r '.backend_instance_ids.value[]' outputs.json)
-    #     for instance_id in $instance_ids; do
-    #       public_ip=$(aws ec2 describe-instances --instance-ids $instance_id --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
-    #       echo "Connecting to instance $instance_id with IP $public_ip"
-    #       ssh -o StrictHostKeyChecking=no -i /path/to/your/private/key ec2-user@$public_ip 'echo "Hello from $(hostname)"'
-    #     done
-    #   env:
-    #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-    #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    - name: Display EC2 Instance IDs
+      run: |
+        cat outputs.json
+        instance_ids=$(jq -r '.backend_instance_ids.value[]' outputs.json)
+        echo "Instance IDs: $instance_ids"
+
+    - name: SSH into EC2 Instances
+      run: |
+        instance_ids=$(jq -r '.backend_instance_ids.value[]' outputs.json)
+        for instance_id in $instance_ids; do
+          public_ip=$(aws ec2 describe-instances --instance-ids $instance_id --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
+          echo "Connecting to instance $instance_id with IP $public_ip"
+          ssh -o StrictHostKeyChecking=no -i ./terraform/deploy-buddies/prod/DEPLOYBUDDY-KP.pem ec2-user@$public_ip 'echo "Hello from $(hostname)"'
+        done
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

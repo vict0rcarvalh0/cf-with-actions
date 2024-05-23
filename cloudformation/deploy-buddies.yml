@@ -139,36 +139,41 @@ Resources:
           LOG_FILE="/var/log/userdata_execution.log"
 
           # Atualizar o sistema e redirecionar os logs para o arquivo
-          yum update -y &>> $LOG_FILE
+          sudo apt update -y &>> $LOG_FILE
+          sudo apt upgrade -y &>> $LOG_FILE
 
-          amazon-linux-extras install docker -y &>> $LOG_FILE
+          # Instalar o Docker e redirecionar os logs para o arquivo
+          sudo apt install -y docker.io &>> $LOG_FILE
+          sudo systemctl enable docker &>> $LOG_FILE
+          sudo systemctl start docker &>> $LOG_FILE
 
-          # Iniciar o Docker e redirecionar os logs para o arquivo
-          systemctl start docker &>> $LOG_FILE
+          # Criar o script em /home/ubuntu/script.sh
+          SCRIPT_FILE="/home/ubuntu/script.sh"
+          touch $SCRIPT_FILE &>> $LOG_FILE
 
-          touch home/ec2-user/script.sh &>> $LOG_FILE
+          echo "#!/bin/bash" > $SCRIPT_FILE
+          echo "release_type=\$1" >> $SCRIPT_FILE
+          echo "AWS_DEFAULT_REGION=\"us-east-1\"" >> $SCRIPT_FILE
+          echo "export AWS_ACCESS_KEY_ID=\$(aws ssm get-parameter --name '/my-app/aws-access-key-id' --with-decryption --query 'Parameter.Value' --output text)" >> $SCRIPT_FILE
+          echo "export AWS_SECRET_ACCESS_KEY=\$(aws ssm get-parameter --name '/my-app/aws-secret-access-key' --with-decryption --query 'Parameter.Value' --output text)" >> $SCRIPT_FILE
+          echo "export AWS_SESSION_TOKEN=\$(aws ssm get-parameter --name '/my-app/aws-session-token' --with-decryption --query 'Parameter.Value' --output text)" >> $SCRIPT_FILE
+          echo "export AWS_DEFAULT_REGION=\$(aws ssm get-parameter --name '/my-app/aws-region' --query 'Parameter.Value' --output text)" >> $SCRIPT_FILE
+          echo "" >> $SCRIPT_FILE
+          echo "AWS_ECR_PASSWORD=\$(aws ecr get-login-password --region \$AWS_DEFAULT_REGION)" >> $SCRIPT_FILE
+          echo "" >> $SCRIPT_FILE
+          echo "if [[ \$(docker ps -q) ]]; then" >> $SCRIPT_FILE
+          echo "  sudo docker stop \$(docker ps -q)" >> $SCRIPT_FILE
+          echo "fi" >> $SCRIPT_FILE
+          echo "" >> $SCRIPT_FILE
+          echo "sudo docker system prune -f" >> $SCRIPT_FILE
+          echo "" >> $SCRIPT_FILE
+          echo "# Login no Docker com credenciais do ECR" >> $SCRIPT_FILE
+          echo "echo \$AWS_ECR_PASSWORD | sudo docker login --username AWS --password-stdin 713621535342.dkr.ecr.us-east-1.amazonaws.com" >> $SCRIPT_FILE
+          echo "sudo docker pull 713621535342.dkr.ecr.us-east-1.amazonaws.com/builds:\$release_type" >> $SCRIPT_FILE
+          echo "" >> $SCRIPT_FILE
+          echo "sudo docker run -d --env-file .env -p 8080:8080 713621535342.dkr.ecr.us-east-1.amazonaws.com/builds:\$release_type" >> $SCRIPT_FILE
 
-          echo "#\!/bin/bash" > home/ec2-user/script.sh
-          echo "release_type=\$1" >> home/ec2-user/script.sh
-          echo "AWS_DEFAULT_REGION="us-east-1"" >> home/ec2-user/script.sh
-          echo "export AWS_ACCESS_KEY_ID=\$(aws ssm get-parameter --name '/my-app/aws-access-key-id' --with-decryption --query 'Parameter.Value' --output text)" >> home/ec2-user/script.sh
-          echo "export AWS_SECRET_ACCESS_KEY=\$(aws ssm get-parameter --name '/my-app/aws-secret-access-key' --with-decryption --query 'Parameter.Value' --output text)" >> home/ec2-user/script.sh
-          echo "export AWS_SESSION_TOKEN=\$(aws ssm get-parameter --name '/my-app/aws-session-token' --with-decryption --query 'Parameter.Value' --output text)" >> home/ec2-user/script.sh
-          echo "export AWS_DEFAULT_REGION=\$(aws ssm get-parameter --name '/my-app/aws-region' --query 'Parameter.Value' --output text)" >> home/ec2-user/script.sh
-          echo "" >> home/ec2-user/script.sh
-          echo "AWS_ECR_PASSWORD=\$(aws ecr get-login-password --region $AWS_DEFAULT_REGION)" >> home/ec2-user/script.sh
-          echo "" >> home/ec2-user/script.sh
-          echo "if [[ $(docker ps -q) ]]; then" >> home/ec2-user/script.sh
-          echo "  sudo docker stop $(docker ps -q)" >> home/ec2-user/script.sh
-          echo "fi" >> home/ec2-user/script.sh
-          echo "" >> home/ec2-user/script.sh
-          echo "sudo docker system prune -f" >> home/ec2-user/script.sh
-          echo "" >> home/ec2-user/script.sh
-          echo "# Login no Docker com credenciais do ECR" >> home/ec2-user/script.sh
-          echo "echo \$AWS_ECR_PASSWORD | sudo docker login --username AWS --password-stdin 713621535342.dkr.ecr.us-east-1.amazonaws.com" >> home/ec2-user/script.sh
-          echo "sudo docker pull 713621535342.dkr.ecr.us-east-1.amazonaws.com/builds:\$release_type" >> home/ec2-user/script.sh
-          echo "" >> home/ec2-user/script.sh
-          echo "sudo docker run -d --env-file .env -p 8080:8080 713621535342.dkr.ecr.us-east-1.amazonaws.com/builds:\$release_type" >> home/ec2-user/script.sh
+          chmod +x $SCRIPT_FILE
       Tags:
         - Key: Name
           Value: !Join ["-", [ec2-1, !Ref EnvironmentType]]
@@ -195,33 +200,41 @@ Resources:
           LOG_FILE="/var/log/userdata_execution.log"
 
           # Atualizar o sistema e redirecionar os logs para o arquivo
-          yum update -y &>> $LOG_FILE
+          sudo apt update -y &>> $LOG_FILE
+          sudo apt upgrade -y &>> $LOG_FILE
 
-          amazon-linux-extras install docker -y &>> $LOG_FILE
+          # Instalar o Docker e redirecionar os logs para o arquivo
+          sudo apt install -y docker.io &>> $LOG_FILE
+          sudo systemctl enable docker &>> $LOG_FILE
+          sudo systemctl start docker &>> $LOG_FILE
 
-          # Iniciar o Docker e redirecionar os logs para o arquivo
-          systemctl start docker &>> $LOG_FILE
+          # Criar o script em /home/ubuntu/script.sh
+          SCRIPT_FILE="/home/ubuntu/script.sh"
+          touch $SCRIPT_FILE &>> $LOG_FILE
 
-          touch home/ec2-user/script.sh &>> $LOG_FILE
+          echo "#!/bin/bash" > $SCRIPT_FILE
+          echo "release_type=\$1" >> $SCRIPT_FILE
+          echo "AWS_DEFAULT_REGION=\"us-east-1\"" >> $SCRIPT_FILE
+          echo "export AWS_ACCESS_KEY_ID=\$(aws ssm get-parameter --name '/my-app/aws-access-key-id' --with-decryption --query 'Parameter.Value' --output text)" >> $SCRIPT_FILE
+          echo "export AWS_SECRET_ACCESS_KEY=\$(aws ssm get-parameter --name '/my-app/aws-secret-access-key' --with-decryption --query 'Parameter.Value' --output text)" >> $SCRIPT_FILE
+          echo "export AWS_SESSION_TOKEN=\$(aws ssm get-parameter --name '/my-app/aws-session-token' --with-decryption --query 'Parameter.Value' --output text)" >> $SCRIPT_FILE
+          echo "export AWS_DEFAULT_REGION=\$(aws ssm get-parameter --name '/my-app/aws-region' --query 'Parameter.Value' --output text)" >> $SCRIPT_FILE
+          echo "" >> $SCRIPT_FILE
+          echo "AWS_ECR_PASSWORD=\$(aws ecr get-login-password --region \$AWS_DEFAULT_REGION)" >> $SCRIPT_FILE
+          echo "" >> $SCRIPT_FILE
+          echo "if [[ \$(docker ps -q) ]]; then" >> $SCRIPT_FILE
+          echo "  sudo docker stop \$(docker ps -q)" >> $SCRIPT_FILE
+          echo "fi" >> $SCRIPT_FILE
+          echo "" >> $SCRIPT_FILE
+          echo "sudo docker system prune -f" >> $SCRIPT_FILE
+          echo "" >> $SCRIPT_FILE
+          echo "# Login no Docker com credenciais do ECR" >> $SCRIPT_FILE
+          echo "echo \$AWS_ECR_PASSWORD | sudo docker login --username AWS --password-stdin 713621535342.dkr.ecr.us-east-1.amazonaws.com" >> $SCRIPT_FILE
+          echo "sudo docker pull 713621535342.dkr.ecr.us-east-1.amazonaws.com/builds:\$release_type" >> $SCRIPT_FILE
+          echo "" >> $SCRIPT_FILE
+          echo "sudo docker run -d --env-file .env -p 8080:8080 713621535342.dkr.ecr.us-east-1.amazonaws.com/builds:\$release_type" >> $SCRIPT_FILE
 
-          echo "#\!/bin/bash" > home/ec2-user/script.sh
-          echo "release_type=\$1" >> home/ec2-user/script.sh
-          echo "export AWS_ACCESS_KEY_ID=\"\"" >> home/ec2-user/script.sh
-          echo "export AWS_SECRET_ACCESS_KEY=\"\"" >> home/ec2-user/script.sh
-          echo "export AWS_SESSION_TOKEN=\"\"" >> home/ec2-user/script.sh
-          echo "export AWS_DEFAULT_REGION=\"us-east-1\"" >> home/ec2-user/script.sh
-          echo "" >> home/ec2-user/script.sh
-          echo "AWS_ECR_PASSWORD=\$(aws ecr get-login-password)" >> home/ec2-user/script.sh
-          echo "" >> home/ec2-user/script.sh
-          echo "sudo docker stop \$(docker ps -aq)" >> home/ec2-user/script.sh
-          echo "" >> home/ec2-user/script.sh
-          echo "sudo docker system prune -f" >> home/ec2-user/script.sh
-          echo "" >> home/ec2-user/script.sh
-          echo "# Login no Docker com credenciais do ECR" >> home/ec2-user/script.sh
-          echo "echo \$AWS_ECR_PASSWORD | sudo docker login --username AWS --password-stdin 713621535342.dkr.ecr.us-east-1.amazonaws.com" >> home/ec2-user/script.sh
-          echo "sudo docker pull 713621535342.dkr.ecr.us-east-1.amazonaws.com/builds:\$release_type" >> home/ec2-user/script.sh
-          echo "" >> home/ec2-user/script.sh
-          echo "sudo docker run -d --env-file .env -p 8080:8080 713621535342.dkr.ecr.us-east-1.amazonaws.com/builds:\$release_type" >> home/ec2-user/script.sh
+          chmod +x $SCRIPT_FILE
       Tags:
         - Key: Name
           Value: !Join ["-", [ec2-2, !Ref EnvironmentType]]

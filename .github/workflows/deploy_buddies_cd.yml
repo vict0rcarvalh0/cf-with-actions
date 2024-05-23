@@ -4,8 +4,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
+deploy:
     runs-on: ubuntu-latest
+
     steps:
     - name: Checkout Repo
       uses: actions/checkout@v2
@@ -17,53 +18,62 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
         aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+    
+    - name: Deploy to AWS CloudFormation
+      uses: aws-actions/aws-cloudformation-github-deploy@v1
+      with:
+        name: deploy-buddies-stack
+        template: infra/deploy-buddies-cf.yml
+        no-fail-on-empty-changeset: "1"
+        parameter-overrides: "DBPassword=postgresdb,EnvironmentType=dev"
+      id: cloudformation-deploy
 
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-
-    - name: Terraform fmt
-      id: fmt
-      run: terraform fmt -check
-
-    - name: Terraform Init
-      id: init
-      run: terraform -chdir=terraform/deploy-buddies/prod init
-
-    - name: Terraform Validate
-      id: validate
-      run: terraform validate -no-color
-
-    - name: Terraform Apply
-      id: apply
-      run: terraform -chdir=terraform/deploy-buddies/prod apply -auto-approve
-
-    - name: Get Terraform Outputs
-      id: outputs
-      run: terraform -chdir=terraform/deploy-buddies/prod output -json > outputs.json
-
-    - name: Verify Private Key Creation
+    - name: Get EC2 instance IP
       run: |
-        if [ ! -f "./terraform/deploy-buddies/prod/DEPLOYBUDDY-KP.pem" ]; then
-          echo "Private key not found!"
-          exit 1
+        instance_id="${{ steps.cloudformation-deploy.outputs.InstanceId }}"
+        instance_ip=$(aws ec2 describe-instances --instance-ids "$instance_id" --query "Reservations[0].Instances[0].PublicIpAddress" --output text)
+        echo "INSTANCE_IP=$instance_ip" >> $GITHUB_ENV
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Determine IMAGE_TAG
+      id: set-tag
+      run: |
+        if [ "${{ github.event.inputs.action-type }}" == "release" ]; then
+          echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+        elif [ "${{ github.event.inputs.action-type }}" == "rollback" ]; then
+          echo "IMAGE_TAG=rollback" >> $GITHUB_ENV
         else
-          echo "Private key created successfully."
+          echo "IMAGE_TAG=unknown" >> $GITHUB_ENV
         fi
 
-    - name: Display EC2 Instance IDs
+    - name: Delete Existing Image
       run: |
-        cat outputs.json
-        instance_ids=$(jq -r '.backend_instance_ids.value[]' outputs.json)
-        echo "Instance IDs: $instance_ids"
+        aws ecr batch-delete-image --repository-name builds --image-ids imageTag=$IMAGE_TAG || echo "No image found with tag $IMAGE_TAG, or deletion not required."
 
-    - name: SSH into EC2 Instances
+    - name: Verifies
       run: |
-        instance_ids=$(jq -r '.backend_instance_ids.value[]' outputs.json)
-        for instance_id in $instance_ids; do
-          public_ip=$(aws ec2 describe-instances --instance-ids $instance_id --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
-          echo "Connecting to instance $instance_id with IP $public_ip"
-          ssh -o StrictHostKeyChecking=no -i ./terraform/deploy-buddies/prod/DEPLOYBUDDY-KP.pem ec2-user@$public_ip 'echo "Hello from $(hostname)"'
-        done
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        echo "ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}"
+        echo "IMAGE_TAG=$IMAGE_TAG"
+
+    - name: Build the Docker image
+      run: |
+        docker build -t ${{ steps.login-ecr.outputs.registry }}/builds:$IMAGE_TAG -f src/server/Dockerfile src/server
+
+    - name: Push the Docker image to Amazon ECR
+      run: |
+        docker push ${{ steps.login-ecr.outputs.registry }}/builds:$IMAGE_TAG
+    
+    - name: Set up SSH Connection
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ env.INSTANCE_IP }} > ~/.ssh/known_hosts
+
+    - name: Access EC2 instance
+      run: |
+        ssh -i ~/.ssh/id_rsa ec2-user@${{ env.INSTANCE_IP }}
+

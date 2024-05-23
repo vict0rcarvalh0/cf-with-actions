@@ -1,0 +1,10 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: DeployBuddy-Backend
+  annotations:
+    github.com/project-slug: Inteli-College/2024-1B-T03-ES10-G02
+spec:
+  type: other
+  lifecycle: unknown
+  owner: bruno_meira

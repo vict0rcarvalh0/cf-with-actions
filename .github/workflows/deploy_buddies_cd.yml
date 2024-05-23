@@ -2,6 +2,11 @@ name: Pipeline CD - DeployBuddies
 
 on:
   workflow_dispatch:
+    inputs:
+      action-type:
+        description: 'Type of action (release or rollback)'
+        required: true
+        default: 'release'
 
 jobs:
   deploy:
@@ -73,7 +78,14 @@ jobs:
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -H ${{ env.INSTANCE_IP }} > ~/.ssh/known_hosts
 
-    - name: Access EC2 instance
+    - name: Transfer script to EC2 instance
       run: |
-        ssh -i ~/.ssh/id_rsa ec2-user@${{ env.INSTANCE_IP }}
+        scp -i ~/.ssh/id_rsa deploy_script.sh ec2-user@${{ env.INSTANCE_IP }}:/home/ec2-user/deploy_script.sh
+    
+    - name: Set permissions for the script
+      run: |
+        ssh -i ~/.ssh/id_rsa ec2-user@${{ env.INSTANCE_IP }} 'chmod +x /home/ec2-user/deploy_script.sh'
 
+    - name: Access EC2 instance and execute script
+      run: |
+        ssh -i ~/.ssh/id_rsa ec2-user@${{ env.INSTANCE_IP }} 'bash /home/ec2-user/deploy_script.sh $IMAGE_TAG ${{ secrets.AWS_ACCESS_KEY_ID }} ${{ secrets.AWS_SECRET_ACCESS_KEY }} ${{ secrets.AWS_SESSION_TOKEN }}'

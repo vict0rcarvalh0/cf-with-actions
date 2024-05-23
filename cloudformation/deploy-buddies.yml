@@ -16,7 +16,7 @@ Parameters:
   KeyPairName:
     Type: String
     Description: The name of an existing Amazon EC2 key pair in this region to use to SSH into the Amazon EC2 instances.
-    Default: KP-GEN
+    Default: KP-DEPLOY
   DBInstanceIdentifier:
     Type: String
     Default: "postgres-db"

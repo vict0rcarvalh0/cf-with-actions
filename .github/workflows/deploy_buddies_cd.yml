@@ -23,9 +23,9 @@ jobs:
       uses: aws-actions/aws-cloudformation-github-deploy@v1
       with:
         name: deploy-buddies-stack
-        template: cloudformation/ec2-using-ecr.yml
+        template: cloudformation/deploy-buddies.yml
         no-fail-on-empty-changeset: "1"
-        # parameter-overrides: "DBPassword=postgresdb,EnvironmentType=dev"
+        parameter-overrides: "DBPassword=postgresdb,EnvironmentType=dev"
       id: cloudformation-deploy
 
     - name: Get EC2 instance IP

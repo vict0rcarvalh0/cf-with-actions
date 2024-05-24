@@ -2,11 +2,11 @@ name: Pipeline CD - DeployBuddies
 
 on:
   workflow_dispatch:
-    inputs:
-      action-type:
-        description: 'Type of action (release or rollback)'
-        required: true
-        default: 'release'
+    # inputs:
+    #   action-type:
+    #     description: 'Type of action (release or rollback)'
+    #     required: true
+    #     default: 'release'
 
 jobs:
   deploy:

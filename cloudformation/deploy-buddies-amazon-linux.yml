@@ -32,6 +32,16 @@ Parameters:
     MinLength: "8"
     MaxLength: "41"
     ConstraintDescription: Must have minimum length of 8 and maximum length of 41
+  AWSAccessKeyId:
+    Type: String
+  AWSSecretAccessKey:
+    Type: String
+  AWSSessionToken:
+    Type: String
+  AWSDefaultRegion:
+    Type: String
+  Env:
+    Type: String
 
 Mappings:
   EnvironmentToInstanceType:
@@ -151,10 +161,10 @@ Resources:
           echo "#\!/bin/bash" > home/ec2-user/script.sh
           echo "release_type=\$1" >> home/ec2-user/script.sh
           echo "AWS_DEFAULT_REGION="us-east-1"" >> home/ec2-user/script.sh
-          echo "export AWS_ACCESS_KEY_ID=\$(aws ssm get-parameter --name '/my-app/aws-access-key-id' --with-decryption --query 'Parameter.Value' --output text)" >> home/ec2-user/script.sh
-          echo "export AWS_SECRET_ACCESS_KEY=\$(aws ssm get-parameter --name '/my-app/aws-secret-access-key' --with-decryption --query 'Parameter.Value' --output text)" >> home/ec2-user/script.sh
-          echo "export AWS_SESSION_TOKEN=\$(aws ssm get-parameter --name '/my-app/aws-session-token' --with-decryption --query 'Parameter.Value' --output text)" >> home/ec2-user/script.sh
-          echo "export AWS_DEFAULT_REGION=\$(aws ssm get-parameter --name '/my-app/aws-region' --query 'Parameter.Value' --output text)" >> home/ec2-user/script.sh
+          echo "AWS_DEFAULT_REGION=${AWSDefaultRegion}" >> /home/ec2-user/script.sh
+          echo "export AWS_ACCESS_KEY_ID=${AWSAccessKeyId}" >> /home/ec2-user/script.sh
+          echo "export AWS_SECRET_ACCESS_KEY=${AWSSecretAccessKey}" >> /home/ec2-user/script.sh
+          echo "export AWS_SESSION_TOKEN=${AWSSessionToken}" >> /home/ec2-user/script.sh
           echo "" >> home/ec2-user/script.sh
           echo "AWS_ECR_PASSWORD=\$(aws ecr get-login-password --region $AWS_DEFAULT_REGION)" >> home/ec2-user/script.sh
           echo "" >> home/ec2-user/script.sh

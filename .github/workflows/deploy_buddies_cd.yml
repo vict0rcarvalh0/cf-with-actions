@@ -30,7 +30,14 @@ jobs:
         name: deploy-buddies-stack
         template: cloudformation/deploy-buddies-amazon-linux.yml
         no-fail-on-empty-changeset: "1"
-        parameter-overrides: "DBPassword=postgresdb,EnvironmentType=dev"
+        parameter-overrides: |
+          DBPassword=postgresdb
+          EnvironmentType=dev
+          AWSAccessKeyId=${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWSSecretAccessKey=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWSSessionToken=${{ secrets.AWS_SESSION_TOKEN }}
+          AWSDefaultRegion=${{ secrets.AWS_DEFAULT_REGION }}
+          Env=${{ secrets.ENV }}
       id: cloudformation-deploy
 
     - name: Get EC2 instance IP
@@ -78,10 +85,6 @@ jobs:
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -H ${{ env.INSTANCE_IP }} > ~/.ssh/known_hosts
 
-    - name: Transfer script to EC2 instance
-      run: |
-        scp -i ~/.ssh/id_rsa deploy_script.sh ec2-user@${{ env.INSTANCE_IP }}:/home/ec2-user/deploy_script.sh
-    
     - name: Set permissions for the script
       run: |
         ssh -i ~/.ssh/id_rsa ec2-user@${{ env.INSTANCE_IP }} 'chmod +x /home/ec2-user/deploy_script.sh'

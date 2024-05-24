@@ -28,7 +28,7 @@ jobs:
       uses: aws-actions/aws-cloudformation-github-deploy@v1
       with:
         name: deploy-buddies-stack
-        template: cloudformation/deploy-buddies.yml
+        template: cloudformation/deploy-buddies-amazon-linux.yml
         no-fail-on-empty-changeset: "1"
         parameter-overrides: "DBPassword=postgresdb,EnvironmentType=dev"
       id: cloudformation-deploy

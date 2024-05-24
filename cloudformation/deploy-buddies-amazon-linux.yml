@@ -161,6 +161,8 @@ Resources:
           # Iniciar o Docker e redirecionar os logs para o arquivo
           systemctl start docker &>> $LOG_FILE
 
+          echo "${Env}" > /home/ec2-user/.env &>> $LOG_FILE
+
           touch /home/ec2-user/script.sh &>> $LOG_FILE
 
           echo "#!/bin/bash" > /home/ec2-user/script.sh
@@ -172,9 +174,7 @@ Resources:
           echo "" >> /home/ec2-user/script.sh
           echo "AWS_ECR_PASSWORD=\$(aws ecr get-login-password --region ${AWSDefaultRegion})" >> /home/ec2-user/script.sh
           echo "" >> /home/ec2-user/script.sh
-          echo "if [[ \$(docker ps -q) ]]; then" >> /home/ec2-user/script.sh
-          echo "  sudo docker stop \$(docker ps -q)" >> /home/ec2-user/script.sh
-          echo "fi" >> /home/ec2-user/script.sh
+          echo "sudo docker stop \$(docker ps -q)" >> /home/ec2-user/script.sh
           echo "" >> /home/ec2-user/script.sh
           echo "sudo docker system prune -f" >> /home/ec2-user/script.sh
           echo "" >> /home/ec2-user/script.sh
@@ -216,6 +216,8 @@ Resources:
           # Iniciar o Docker e redirecionar os logs para o arquivo
           systemctl start docker &>> $LOG_FILE
 
+          echo "${Env}" > /home/ec2-user/.env &>> $LOG_FILE
+
           touch /home/ec2-user/script.sh &>> $LOG_FILE
 
           echo "#!/bin/bash" > /home/ec2-user/script.sh
@@ -227,17 +229,15 @@ Resources:
           echo "" >> /home/ec2-user/script.sh
           echo "AWS_ECR_PASSWORD=\$(aws ecr get-login-password --region ${AWSDefaultRegion})" >> /home/ec2-user/script.sh
           echo "" >> /home/ec2-user/script.sh
-          echo "if [[ \$(docker ps -q) ]]; then" >> /home/ec2-user/script.sh
-          echo "  sudo docker stop \$(docker ps -q)" >> /home/ec2-user/script.sh
-          echo "fi" >> /home/ec2-user/script.sh
+          echo "sudo docker stop \$(docker ps -q)" >> /home/ec2-user/script.sh
           echo "" >> /home/ec2-user/script.sh
           echo "sudo docker system prune -f" >> /home/ec2-user/script.sh
           echo "" >> /home/ec2-user/script.sh
           echo "# Login no Docker com credenciais do ECR" >> /home/ec2-user/script.sh
-          echo "echo \$AWS_ECR_PASSWORD | sudo docker login --username AWS --password-stdin 713621535342.dkr.ecr.us-east-1.amazonaws.com" >> /home/ec2-user/script.sh
-          echo "sudo docker pull 713621535342.dkr.ecr.us-east-1.amazonaws.com/builds:\$release_type" >> /home/ec2-user/script.sh
+          echo "echo \$AWS_ECR_PASSWORD | sudo docker login --username AWS --password-stdin 730335199760.dkr.ecr.us-east-1.amazonaws.com" >> /home/ec2-user/script.sh
+          echo "sudo docker pull 730335199760.dkr.ecr.us-east-1.amazonaws.com/builds:\$release_type" >> /home/ec2-user/script.sh
           echo "" >> /home/ec2-user/script.sh
-          echo "sudo docker run -d --env-file .env -p 8080:8080 713621535342.dkr.ecr.us-east-1.amazonaws.com/builds:\$release_type" >> /home/ec2-user/script.sh
+          echo "sudo docker run -d --env-file .env -p 8080:8080 730335199760.dkr.ecr.us-east-1.amazonaws.com/builds:\$release_type" >> /home/ec2-user/script.sh
       Tags:
         - Key: Name
           Value: !Join ["-", [ec2-2, !Ref EnvironmentType]]

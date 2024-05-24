@@ -33,58 +33,43 @@ jobs:
         parameter-overrides: "DBPassword=postgresdb,EnvironmentType=dev,AWSAccessKeyId=${{ secrets.AWS_ACCESS_KEY_ID }},AWSSecretAccessKey=${{ secrets.AWS_SECRET_ACCESS_KEY }},AWSSessionToken=${{ secrets.AWS_SESSION_TOKEN }},AWSDefaultRegion=${{ secrets.AWS_DEFAULT_REGION }},Env=${{ secrets.ENV }}"
       id: cloudformation-deploy
 
-    - name: Get EC2 instance IP
+    - name: Get EC2 instance IPs
       run: |
-        instance_id="${{ steps.cloudformation-deploy.outputs.InstanceId }}"
-        instance_ip=$(aws ec2 describe-instances --instance-ids "$instance_id" --query "Reservations[0].Instances[0].PublicIpAddress" --output text)
-        echo "INSTANCE_IP=$instance_ip" >> $GITHUB_ENV
+        instance_ids=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=deploy-buddies-stack" --query "Reservations[*].Instances[*].InstanceId" --output text)
+        instance_ips=$(aws ec2 describe-instances --instance-ids $instance_ids --query "Reservations[*].Instances[*].PublicIpAddress" --output text)
+        IFS=' ' read -r -a ips_array <<< "$instance_ips"
+        echo "INSTANCE_IP_1=${ips_array[0]}" >> $GITHUB_ENV
+        echo "INSTANCE_IP_2=${ips_array[1]}" >> $GITHUB_ENV
 
-    # - name: Login to Amazon ECR
-    #   id: login-ecr
-    #   uses: aws-actions/amazon-ecr-login@v1
-
-    # - name: Determine IMAGE_TAG
-    #   id: set-tag
-    #   run: |
-    #     if [ "${{ github.event.inputs.action-type }}" == "release" ]; then
-    #       echo "IMAGE_TAG=latest" >> $GITHUB_ENV
-    #     elif [ "${{ github.event.inputs.action-type }}" == "rollback" ]; then
-    #       echo "IMAGE_TAG=rollback" >> $GITHUB_ENV
-    #     else
-    #       echo "IMAGE_TAG=unknown" >> $GITHUB_ENV
-    #     fi
-
-    # - name: Delete Existing Image
-    #   run: |
-    #     aws ecr batch-delete-image --repository-name builds --image-ids imageTag=$IMAGE_TAG || echo "No image found with tag $IMAGE_TAG, or deletion not required."
-
-    # - name: Verifies
-    #   run: |
-    #     echo "ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}"
-    #     echo "IMAGE_TAG=$IMAGE_TAG"
-
-    # - name: Build the Docker image
-    #   run: |
-    #     docker build -t ${{ steps.login-ecr.outputs.registry }}/builds:$IMAGE_TAG -f src/server/Dockerfile src/server
-
-    # - name: Push the Docker image to Amazon ECR
-    #   run: |
-    #     docker push ${{ steps.login-ecr.outputs.registry }}/builds:$IMAGE_TAG
-    
-    - name: Set up SSH Connection
+    - name: Set up SSH Connection for Instance 1
       run: |
         mkdir -p ~/.ssh
         echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H ${{ env.INSTANCE_IP }} > ~/.ssh/known_hosts
+        ssh-keyscan -H ${{ env.INSTANCE_IP_1 }} > ~/.ssh/known_hosts
 
-    - name: Set permissions for the script
+    - name: Set up SSH Connection for Instance 2
       run: |
-        ssh -i ~/.ssh/id_rsa ec2-user@${{ env.INSTANCE_IP }} 'sudo chmod +x /home/ec2-user/script.sh'
+        ssh-keyscan -H ${{ env.INSTANCE_IP_2 }} >> ~/.ssh/known_hosts
 
-    - name: Access EC2 instance and execute script
+    - name: Set permissions for the script on Instance 1
       run: |
-        ssh -i ~/.ssh/id_rsa ec2-user@${{ env.INSTANCE_IP }} << 'EOF'
+        ssh -i ~/.ssh/id_rsa ec2-user@${{ env.INSTANCE_IP_1 }} 'sudo chmod +x /home/ec2-user/script.sh'
+
+    - name: Set permissions for the script on Instance 2
+      run: |
+        ssh -i ~/.ssh/id_rsa ec2-user@${{ env.INSTANCE_IP_2 }} 'sudo chmod +x /home/ec2-user/script.sh'
+
+    - name: Access EC2 Instance 1 and execute script
+      run: |
+        ssh -i ~/.ssh/id_rsa ec2-user@${{ env.INSTANCE_IP_1 }} << 'EOF'
+          chmod +x /home/ec2-user/script.sh
+          /home/ec2-user/script.sh ${{ env.IMAGE_TAG }}
+        EOF
+
+    - name: Access EC2 Instance 2 and execute script
+      run: |
+        ssh -i ~/.ssh/id_rsa ec2-user@${{ env.INSTANCE_IP_2 }} << 'EOF'
           chmod +x /home/ec2-user/script.sh
           /home/ec2-user/script.sh ${{ env.IMAGE_TAG }}
         EOF

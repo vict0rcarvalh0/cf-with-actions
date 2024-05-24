@@ -80,8 +80,8 @@ jobs:
 
     - name: Set permissions for the script
       run: |
-        ssh -i ~/.ssh/id_rsa ec2-user@${{ env.INSTANCE_IP }} 'chmod +x /home/ec2-user/script.sh'
+        ssh -i ~/.ssh/id_rsa ec2-user@${{ env.INSTANCE_IP }} 'sudo chmod +x /home/ec2-user/script.sh'
 
     - name: Access EC2 instance and execute script
       run: |
-        ssh -i ~/.ssh/id_rsa ec2-user@${{ env.INSTANCE_IP }} 'bash /home/ec2-user/script.sh $IMAGE_TAG'
+        ssh -i ~/.ssh/id_rsa ec2-user@${{ env.INSTANCE_IP }} 'bash sudo /home/ec2-user/script.sh $IMAGE_TAG'

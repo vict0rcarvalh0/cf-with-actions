@@ -84,4 +84,4 @@ jobs:
 
     - name: Access EC2 instance and execute script
       run: |
-        ssh -i ~/.ssh/id_rsa ec2-user@${{ env.INSTANCE_IP }} 'bash /home/ec2-user/script.sh $IMAGE_TAG'
+        ssh -i ~/.ssh/id_rsa ec2-user@${{ env.INSTANCE_IP }} 'sudo bash /home/ec2-user/script.sh $IMAGE_TAG'

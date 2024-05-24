@@ -38,38 +38,28 @@ jobs:
         instance_ids=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=deploy-buddies-stack" --query "Reservations[*].Instances[*].InstanceId" --output text)
         instance_ips=$(aws ec2 describe-instances --instance-ids $instance_ids --query "Reservations[*].Instances[*].PublicIpAddress" --output text)
         IFS=' ' read -r -a ips_array <<< "$instance_ips"
-        echo "INSTANCE_IP_1=${ips_array[0]}" >> $GITHUB_ENV
-        echo "INSTANCE_IP_2=${ips_array[1]}" >> $GITHUB_ENV
+        echo "INSTANCE_IPS=${ips_array[@]}" >> $GITHUB_ENV
 
-    - name: Set up SSH Connection for Instance 1
+    - name: Set up SSH Connection for Instances
       run: |
         mkdir -p ~/.ssh
         echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H ${{ env.INSTANCE_IP_1 }} > ~/.ssh/known_hosts
+        for ip in ${{ env.INSTANCE_IPS }}; do
+          ssh-keyscan -H $ip >> ~/.ssh/known_hosts
+        done
 
-    - name: Set up SSH Connection for Instance 2
+    - name: Set permissions for the script on Instances
       run: |
-        ssh-keyscan -H ${{ env.INSTANCE_IP_2 }} >> ~/.ssh/known_hosts
+        for ip in ${{ env.INSTANCE_IPS }}; do
+          ssh -i ~/.ssh/id_rsa ec2-user@$ip 'sudo chmod +x /home/ec2-user/script.sh'
+        done
 
-    - name: Set permissions for the script on Instance 1
+    - name: Access EC2 Instances and execute script
       run: |
-        ssh -i ~/.ssh/id_rsa ec2-user@${{ env.INSTANCE_IP_1 }} 'sudo chmod +x /home/ec2-user/script.sh'
-
-    - name: Set permissions for the script on Instance 2
-      run: |
-        ssh -i ~/.ssh/id_rsa ec2-user@${{ env.INSTANCE_IP_2 }} 'sudo chmod +x /home/ec2-user/script.sh'
-
-    - name: Access EC2 Instance 1 and execute script
-      run: |
-        ssh -i ~/.ssh/id_rsa ec2-user@${{ env.INSTANCE_IP_1 }} << 'EOF'
-          chmod +x /home/ec2-user/script.sh
-          /home/ec2-user/script.sh ${{ env.IMAGE_TAG }}
-        EOF
-
-    - name: Access EC2 Instance 2 and execute script
-      run: |
-        ssh -i ~/.ssh/id_rsa ec2-user@${{ env.INSTANCE_IP_2 }} << 'EOF'
-          chmod +x /home/ec2-user/script.sh
-          /home/ec2-user/script.sh ${{ env.IMAGE_TAG }}
-        EOF
+        for ip in ${{ env.INSTANCE_IPS }}; do
+          ssh -i ~/.ssh/id_rsa ec2-user@$ip << 'EOF'
+            chmod +x /home/ec2-user/script.sh
+            /home/ec2-user/script.sh ${{ env.IMAGE_TAG }}
+          EOF
+        done

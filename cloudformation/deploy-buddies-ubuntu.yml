@@ -168,10 +168,10 @@ Resources:
           echo "sudo docker system prune -f" >> $SCRIPT_FILE
           echo "" >> $SCRIPT_FILE
           echo "# Login no Docker com credenciais do ECR" >> $SCRIPT_FILE
-          echo "echo \$AWS_ECR_PASSWORD | sudo docker login --username AWS --password-stdin 713621535342.dkr.ecr.us-east-1.amazonaws.com" >> $SCRIPT_FILE
-          echo "sudo docker pull 713621535342.dkr.ecr.us-east-1.amazonaws.com/builds:\$release_type" >> $SCRIPT_FILE
+          echo "echo \$AWS_ECR_PASSWORD | sudo docker login --username AWS --password-stdin 730335199760.dkr.ecr.us-east-1.amazonaws.com" >> $SCRIPT_FILE
+          echo "sudo docker pull 730335199760.dkr.ecr.us-east-1.amazonaws.com/builds:\$release_type" >> $SCRIPT_FILE
           echo "" >> $SCRIPT_FILE
-          echo "sudo docker run -d --env-file .env -p 8080:8080 713621535342.dkr.ecr.us-east-1.amazonaws.com/builds:\$release_type" >> $SCRIPT_FILE
+          echo "sudo docker run -d --env-file .env -p 8080:8080 730335199760.dkr.ecr.us-east-1.amazonaws.com/builds:\$release_type" >> $SCRIPT_FILE
 
           chmod +x $SCRIPT_FILE
       Tags:

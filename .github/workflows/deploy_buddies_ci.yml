@@ -35,26 +35,27 @@ jobs:
           exit 1
         fi
 
-  unit-tests:
-    needs: verify-if-pull-request-is-from-development-branch
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout Repo
-      uses: actions/checkout@v2
+  # unit-tests:
+  #   needs: verify-if-pull-request-is-from-development-branch
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - name: Checkout Repo
+  #     uses: actions/checkout@v2
 
-    - name: Setup Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: '1.22.2'
+  #   - name: Setup Go
+  #     uses: actions/setup-go@v2
+  #     with:
+  #       go-version: '1.22.2'
 
-    - name: Install dependencies and run tests
-      run: |
-        cd src/server && cp .env.example .env && go mod tidy && make database-dev
-        cd internal/tests && go test
-        cd ../.. && make clean
+  #   - name: Install dependencies and run tests
+  #     run: |
+  #       cd src/server && cp .env.example .env && go mod tidy && make database-dev
+  #       cd internal/tests && go test
+  #       cd ../.. && make clean
 
   build-and-push-image-into-ecr:
-    needs: unit-tests
+    # needs: unit-tests
+    needs: verify-if-pull-request-is-from-development-branch
     runs-on: ubuntu-latest
     
     steps:

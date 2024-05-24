@@ -52,7 +52,7 @@ jobs:
     - name: Set permissions for the script on Instances
       run: |
         for ip in ${{ env.INSTANCE_IPS }}; do
-          ssh -i ~/.ssh/id_rsa ec2-user@$ip 'sudo chmod +x /home/ec2-user/script.sh'
+          ssh -i ~/.ssh/id_rsa ec2-user@$ip 'sudo chown ec2-user:ec2-user /home/ec2-user/script.sh && sudo chmod +x /home/ec2-user/script.sh'
         done
 
     - name: Access EC2 Instances and execute script

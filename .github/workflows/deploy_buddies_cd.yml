@@ -58,8 +58,5 @@ jobs:
     - name: Access EC2 Instances and execute script
       run: |
         for ip in ${{ env.INSTANCE_IPS }}; do
-          ssh -i ~/.ssh/id_rsa ec2-user@$ip << 'EOF'
-            chmod +x /home/ec2-user/script.sh
-            /home/ec2-user/script.sh ${{ env.IMAGE_TAG }}
-          EOF
+          ssh -i ~/.ssh/id_rsa ec2-user@$ip bash -c "'chmod +x /home/ec2-user/script.sh && /home/ec2-user/script.sh ${{ env.IMAGE_TAG }}'"
         done

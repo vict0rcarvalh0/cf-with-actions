@@ -1,0 +1,7 @@
+mode: set
+sample-app-test-go/functions.go:3.28,5.2 1 1
+sample-app-test-go/functions.go:7.27,9.2 1 1
+sample-app-test-go/functions.go:11.31,13.57 2 1
+sample-app-test-go/functions.go:13.57,15.6 1 1
+sample-app-test-go/functions.go:16.5,16.25 1 1
+sample-app-test-go/main.go:7.13,12.2 3 0

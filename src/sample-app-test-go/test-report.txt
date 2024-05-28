@@ -1,0 +1,19 @@
+Executando testes e gerando arquivo de cobertura...
+ok  	sample-app-test-go	0.004s	coverage: 66.7% of statements
+Relatório de cobertura HTML gerado: coverage.html
+Gerando relatório detalhado dos testes...
+=== RUN   TestAdd
+--- PASS: TestAdd (0.00s)
+=== RUN   TestIsEven
+--- PASS: TestIsEven (0.00s)
+=== RUN   TestReverse
+--- PASS: TestReverse (0.00s)
+PASS
+ok  	sample-app-test-go	(cached)
+Cobertura dos testes:
+sample-app-test-go/functions.go:3:	Add		100.0%
+sample-app-test-go/functions.go:7:	IsEven		100.0%
+sample-app-test-go/functions.go:11:	Reverse		100.0%
+sample-app-test-go/main.go:7:		main		0.0%
+total:					(statements)	66.7%
+Relatório de testes gerado: test-report.txt

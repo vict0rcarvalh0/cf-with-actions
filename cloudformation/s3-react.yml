@@ -4,7 +4,7 @@ Resources:
   ReactAppBucket:
     Type: 'AWS::S3::Bucket'
     Properties:
-      BucketName: 
+      BucketName: frontend-bucket-deploy-buddies
       WebsiteConfiguration:
         IndexDocument: index.html
         ErrorDocument: error.html

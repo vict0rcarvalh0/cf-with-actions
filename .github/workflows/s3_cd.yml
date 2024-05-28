@@ -17,11 +17,11 @@ jobs:
           node-version: '14'
 
       - name: Install dependencies
-        working-directory: frontend
+        working-directory: src/sample-frontend-react
         run: npm install
 
       - name: Build the React app
-        working-directory: frontend
+        working-directory: src/sample-frontend-react
         run: npm run build
 
       - name: Configure AWS credentials
@@ -41,7 +41,7 @@ jobs:
       - name: Sync files to S3
         run: |
           BUCKET_NAME=$(aws cloudformation describe-stacks --stack-name frontend-stack --query "Stacks[0].Outputs[?OutputKey=='ReactAppBucketName'].OutputValue" --output text)
-          aws s3 sync frontend/build s3://$BUCKET_NAME --delete
+          aws s3 sync src/sample-frontend-react/build s3://$BUCKET_NAME --delete
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

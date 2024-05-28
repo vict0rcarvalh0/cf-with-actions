@@ -14,9 +14,9 @@ jobs:
         with:
           node-version: '20'
       - name: Install dependencies
-        run: cd frontend && npm install
+        run: cd src/sample-frontend-react && npm install
       - name: Build the React application
-        run: cd frontend && npm run build
+        run: cd src/sample-frontend-react && npm run build
 
   static-code-analysis:
     needs: build-app
@@ -68,9 +68,9 @@ jobs:
         with:
           node-version: '20'
       - name: Instalar dependências
-        run: cd frontend && npm install
+        run: cd src/sample-frontend-react && npm install
       - name: Rodar testes unitários com Jest
-        run: cd frontend && npm test
+        run: cd src/sample-frontend-react && npm test
 
   docker-deployment:
     needs: unit-tests
@@ -78,8 +78,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Construir Docker Image
-        run: cd frontend && docker build -t frontend .
+        run: cd frontsrc/sample-frontend-reactend && docker build -t src/sample-frontend-react .
       - name: Rodar Docker Container
-        run: docker run -d -p 80:80 frontend
+        run: docker run -d -p 80:80 src/sample-frontend-react
       - name: Checar se o container está rodando
-        run: docker ps | grep frontend
+        run: docker ps | grep src/sample-frontend-react

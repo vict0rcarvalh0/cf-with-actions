@@ -40,7 +40,7 @@ jobs:
 
       - name: Sync files to S3
         run: |
-          BUCKET_NAME=$(aws cloudformation describe-stacks --stack-name ReactAppStack --query "Stacks[0].Outputs[?OutputKey=='ReactAppBucketName'].OutputValue" --output text)
+          BUCKET_NAME=$(aws cloudformation describe-stacks --stack-name frontend-stack --query "Stacks[0].Outputs[?OutputKey=='ReactAppBucketName'].OutputValue" --output text)
           aws s3 sync frontend/build s3://$BUCKET_NAME --delete
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

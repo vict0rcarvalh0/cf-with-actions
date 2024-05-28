@@ -35,7 +35,7 @@ jobs:
       - name: Deploy CloudFormation stack
         uses: aws-actions/aws-cloudformation-github-deploy@v1
         with:
-          name: ReactAppStack
+          name: frontend-stack
           template: cloudformation/s3-react.yml
 
       - name: Sync files to S3

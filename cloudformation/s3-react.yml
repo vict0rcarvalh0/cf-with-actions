@@ -1,13 +1,31 @@
-AWSTemplateFormatVersion: '2010-09-09'
+Description: This CloudFormation template creates an S3 bucket to host a React app.
+
 Resources:
   ReactAppBucket:
     Type: 'AWS::S3::Bucket'
     Properties:
-      BucketName: your-react-app-bucket-name
-      AccessControl: PublicRead
+      BucketName: 
       WebsiteConfiguration:
         IndexDocument: index.html
         ErrorDocument: error.html
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        IgnorePublicAcls: false
+        BlockPublicPolicy: false
+        RestrictPublicBuckets: false
+
+  BucketPolicy:
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      Bucket: !Ref ReactAppBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: "*"
+            Action: s3:GetObject
+            Resource: !Sub 'arn:aws:s3:::${ReactAppBucket}/*'
 
 Outputs:
   ReactAppBucketName:

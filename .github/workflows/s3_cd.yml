@@ -1,4 +1,4 @@
-name: Deploy React App and CloudFormation Stack
+name: Pipeline CD - React App to S3 Bucket
 
 on:
   workflow_dispatch:
@@ -32,11 +32,11 @@ jobs:
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
 
-      - name: Deploy CloudFormation stack
+      - name: Deploy CloudFormation Stack
         uses: aws-actions/aws-cloudformation-github-deploy@v1
         with:
           name: frontend-stack
-          template: cloudformation/s3-react.yml
+          template: cloudformation/s3-frontend.yml
 
       - name: Sync files to S3
         run: |

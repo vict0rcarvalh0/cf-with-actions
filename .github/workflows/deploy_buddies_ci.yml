@@ -35,26 +35,44 @@ jobs:
           exit 1
         fi
 
-  # unit-tests:
-  #   needs: verify-if-pull-request-is-from-development-branch
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - name: Checkout Repo
-  #     uses: actions/checkout@v2
+  unit-tests:
+    needs: verify-if-pull-request-is-from-development-branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
 
-  #   - name: Setup Go
-  #     uses: actions/setup-go@v2
-  #     with:
-  #       go-version: '1.22.2'
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.22.2'
 
-  #   - name: Install dependencies and run tests
-  #     run: |
-  #       cd src/server && cp .env.example .env && go mod tidy && make database-dev
-  #       cd internal/tests && go test
-  #       cd ../.. && make clean
+      - name: Run tests and generate coverage report
+        run: |
+          cd src/sample-app-test-go
+          chmod +x run_tests.sh
+          ./run_tests.sh
+
+      - name: Upload test report
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-report
+          path: src/sample-app-test-go/test-report.txt
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v2
+        with:
+          name: coverage-report
+          path: src/sample-app-test-go/coverage.html
+
+      - name: Upload coverage out file
+        uses: actions/upload-artifact@v2
+        with:
+          name: coverage-out
+          path: src/sample-app-test-go/coverage.out
 
   build-and-push-image-into-ecr:
-    # needs: unit-tests
+    needs: unit-tests
     needs: verify-if-pull-request-is-from-development-branch
     runs-on: ubuntu-latest
     

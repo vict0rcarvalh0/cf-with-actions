@@ -73,7 +73,7 @@ jobs:
 
   build-and-push-image-into-ecr:
     needs: unit-tests
-    needs: verify-if-pull-request-is-from-development-branch
+    # needs: verify-if-pull-request-is-from-development-branch
     runs-on: ubuntu-latest
     
     steps:

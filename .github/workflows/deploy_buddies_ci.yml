@@ -51,7 +51,7 @@ jobs:
         run: |
           cd src/sample-app-test-go
           chmod +x run_tests.sh
-          ./run_tests.sh
+          ./scripts/run_tests.sh
 
       - name: Upload test report
         uses: actions/upload-artifact@v2
@@ -71,16 +71,10 @@ jobs:
           name: coverage-out
           path: src/sample-app-test-go/coverage.out
       
-      - name: Check code coverage
+      - name: Check test coverage
         run: |
-          # Extract coverage percentage (assuming it's in the last line of test-report.txt)
-          COVERAGE=$(tail -n 1 src/sample-app-test-go/test-report.txt | grep coverage | awk '{print $2}')
-          COVERAGE_VALUE=${COVERAGE%?}  # Remove trailing % sign
-
-          if [[ $COVERAGE_VALUE -lt 60 ]]; then
-            echo "Code coverage ($COVERAGE_VALUE%) is below the threshold (60%). Failing job."
-            exit 1  # Fail the job
-          fi
+          chmod +x ./scripts/check_coverage.sh
+          ./scripts/check_coverage.sh
 
   build-and-push-image-into-ecr:
     needs: unit-tests

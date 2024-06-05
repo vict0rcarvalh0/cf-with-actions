@@ -50,7 +50,7 @@ jobs:
       - name: Run tests and generate coverage report
         run: |
           cd src/sample-app-test-go
-          chmod +x run_tests.sh
+          chmod +x ./scripts/run_tests.sh
           ./scripts/run_tests.sh
 
       - name: Upload test report
@@ -73,6 +73,7 @@ jobs:
       
       - name: Check test coverage
         run: |
+          cd src/sample-app-test-go
           chmod +x ./scripts/check_coverage.sh
           ./scripts/check_coverage.sh
 

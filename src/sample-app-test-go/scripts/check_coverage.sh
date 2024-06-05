@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the minimum coverage required
-MIN_COVERAGE=60
+MIN_COVERAGE=80
 
 # Extract the coverage percentage from the coverage.out file
 COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')

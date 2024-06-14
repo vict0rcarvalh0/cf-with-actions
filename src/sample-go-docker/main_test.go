@@ -21,7 +21,7 @@ func TestHandler(t *testing.T) {
             status, http.StatusOK)
     }
 
-    expected := "Hello, World!"
+    expected := "Victor!"
     if rr.Body.String() != expected {
         t.Errorf("handler returned unexpected body: got %v want %v",
             rr.Body.String(), expected)

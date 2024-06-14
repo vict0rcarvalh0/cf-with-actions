@@ -1,26 +1,59 @@
-name: Node.js CI - Testing Act
-'on':
+name: CI Go
+
+on:
   push:
     branches:
       - main
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: "1.22" # Versão do Go 1.22
+      - name: Build
+        working-directory: src/sample-go-docker
+        run: go build -o main .
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: "1.22.3"
+      - name: Install golangci-lint
+        working-directory: src/sample-go-docker
+        run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.54.2
+      - name: Run golangci-lint
+        working-directory: src/sample-go-docker
+        run: golangci-lint run
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: "1.22"
+      - name: Run tests
+        working-directory: src/sample-go-docker
+        run: go test -v ./...
+
   deploy:
     runs-on: ubuntu-latest
-
+    needs: [build, lint, test, security]
+    environment: production
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: '14'
-
-      - name: Install dependencies
-        working-directory: src/sample-frontend-react
-        run: npm install
-
-      - name: Build the React app
-        working-directory: src/sample-frontend-react
-        run: npm run build
+      - uses: actions/checkout@v3
+      - name: Build and push Docker image
+        run: |
+          docker build -t src/sample-go-docker .
+          docker push src/sample-go-docker
+      # - name: Deploy to Render.com
+      #   uses: render-actions/deploy@v1
+      #   with:
+      #     service-id: ${{ secrets.RENDER_SERVICE_ID }}
+      #     api-key: ${{ secrets.RENDER_API_KEY }}

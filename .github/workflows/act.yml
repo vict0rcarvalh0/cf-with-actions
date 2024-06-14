@@ -47,11 +47,21 @@ jobs:
     # needs: [build, lint, test, security]
     environment: production
     steps:
-      - uses: actions/checkout@v3
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Build and push Docker image
+        working-directory: src/sample-go-docker
         run: |
-          docker build -t src/sample-go-docker/Dockerfile .
-          docker push src/sample-go-docker
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/sample-go-docker:latest .
+          docker push ${{ secrets.DOCKER_USERNAME }}/sample-go-docker:latest
+      # - uses: actions/checkout@v3
+      # - name: Build and push Docker image
+      #   run: |
+      #     docker build -t src/sample-go-docker/Dockerfile .
+      #     docker push src/sample-go-docker
       # - name: Deploy to Render.com
       #   uses: render-actions/deploy@v1
       #   with:

@@ -47,7 +47,8 @@ jobs:
     # needs: [build, lint, test, security]
     environment: production
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v2
       - name: Build and push Docker image
         working-directory: src/sample-go-docker
         run: |

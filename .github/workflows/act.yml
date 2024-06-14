@@ -52,9 +52,9 @@ jobs:
       - name: Build and push Docker image
         working-directory: src/sample-go-docker
         run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/my-image .
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/test .
           docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-          docker push ${{ secrets.DOCKER_USERNAME }}/my-image
+          docker push ${{ secrets.DOCKER_USERNAME }}/test
       # - uses: actions/checkout@v3
       # - name: Build and push Docker image
       #   run: |
